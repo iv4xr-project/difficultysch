@@ -7,9 +7,9 @@ All these settings can be changed in settings.py
     The agent is stopped after 1000 runs where the agent gets to the goal
 
     While simulating u can use:
-        Key P to pause/unpause
-        Key R to remove/put the cap of 60 actions/sec (Default is on)
-        Key D to activate/remove drawing of the enviorment (Default is on)
+        -Key P to pause/unpause
+        -Key R to remove/put the cap of 60 actions/sec (Default is on)
+        -Key D to activate/remove drawing of the enviorment (Default is on)
 
     The variable NOISE can be changed from 0 to 1 to simulate an human error where its value represents the probability of a human error and a random action is chosen
 
