@@ -15,6 +15,8 @@ class Player(pg.sprite.Sprite):
         self.vel = vec(0,0)
         self.acc = vec(0,0)
         self.pos_init = vec(x,y) * TILESIZE
+        self.was_c = False
+        self.crouching = False
     
     def jump(self):
         #jump only if standing
@@ -26,7 +28,6 @@ class Player(pg.sprite.Sprite):
             self.vel.y = -PLAYER_JUMP
 
     def crouch(self):
-        print("yoooo")
         self.image = pg.Surface((TILESIZE,TILESIZE))
         self.image.fill(YELLOW)
         self.rect = self.image.get_rect()
@@ -41,15 +42,21 @@ class Player(pg.sprite.Sprite):
             if keys[pg.K_RIGHT] or keys[pg.K_d]:
                 self.acc.x = PLAYER_ACC
             if keys[pg.K_s]:
+                self.crouching = True
+                self.was_c = True
                 self.image = pg.Surface((TILESIZE,TILESIZE))
                 self.image.fill(YELLOW)
                 self.rect = self.image.get_rect()
             else:
+                if self.crouching:
+                    self.was_c = True
+                else:
+                    self.was_c = False
+                self.crouching  = False
                 self.image = pg.Surface((TILESIZE,TILESIZE*2))
                 self.image.fill(YELLOW)
                 self.rect = self.image.get_rect()
         else:
-            #print("yoooo")
             if action == 1:
                 self.acc.x = -PLAYER_ACC
             elif action == 2:
@@ -132,3 +139,16 @@ class Flag(pg.sprite.Sprite):
         self.y = y
         self.rect.x = x * TILESIZE
         self.rect.y = y * TILESIZE - TILESIZE*7
+
+class Block(pg.sprite.Sprite):
+    def __init__(self,game, x, y):
+        self.groups = game.all_sprites, game.blocks
+        pg.sprite.Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = pg.Surface((TILESIZE,TILESIZE))
+        self.image.fill(BROWN)
+        self.rect = self.image.get_rect()
+        self.x = x
+        self.y = y
+        self.rect.x = x * TILESIZE
+        self.rect.y = y * TILESIZE

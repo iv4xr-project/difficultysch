@@ -23,6 +23,7 @@ class Game:
         self.load_data()
         self.font_name = pg.font.match_font(FONT_NAME)
         self.actions = ACTIONS
+        self.won = False
 
     def new(self):
         # start a new game
@@ -30,6 +31,7 @@ class Game:
         self.ground = pg.sprite.Group()
         self.pipes = pg.sprite.Group()
         self.flag = pg.sprite.Group()
+        self.blocks = pg.sprite.Group()
         self.font = pg.font.SysFont('Consolas', 30)
         self.reward = 0
         for row, tiles in enumerate(self.map.data):
@@ -43,6 +45,8 @@ class Game:
                 if tile == 'F':
                     Flag(self, col, row)
                     self.goal = vec(col,row) * TILESIZE
+                if tile == '3':
+                    Block(self,col, row)
         self.camera = Camera(self.map.width, self.map.height)
         
         if self.human:
@@ -84,6 +88,10 @@ class Game:
                 self.player.pos.y = hits_ground[0].rect.top
                 self.player.vel.y = 0
             elif self.player.vel.y < 0:
+                time.sleep(5)
+                if self.player.was_c:
+                    self.player.crouching = True
+                    self.player.crouch()
                 self.player.pos.y = hits_ground[0].rect.bottom + self.player.rect.height
                 self.player.vel.y = 0
         hits_pipe = pg.sprite.spritecollide(self.player, self.pipes, False)
@@ -101,17 +109,23 @@ class Game:
         hits_flag = pg.sprite.spritecollide(self.player, self.flag, False)
         if hits_flag:
             self.reward, self.cost = self.get_reward(False,True)
-            print("YOU WON\nSCORE:", self.reward)
+            if self.human:
+                print("YOU WON\nSCORE:", self.reward)
+            self.won = True
             self.playing = False
-        if self.player.pos.y > 385.2 + TILESIZE:
+        if self.player.pos.y > 384 + TILESIZE/2:
             self.reward, self.cost = self.get_reward(True, False)
-            print("Dead")
-            print("GAMEOVER\nSCORE:", self.reward)
+            if self.human:
+                print("Dead")
+                print("GAMEOVER\nSCORE:", self.reward)
+            self.won = False
             self.playing = False
         if self.seconds == MAX_TIME:
             self.reward, self.cost = self.get_reward(False, False)
-            print("No time left")
-            print("GAMEOVER\nSCORE:", self.reward)
+            if self.human:
+                print("No time left")
+                print("GAMEOVER\nSCORE:", self.reward)
+            self.won = False
             self.playing = False
         self.reward, self.cost = self.get_reward(False, False)
 
@@ -126,6 +140,7 @@ class Game:
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_SPACE:
                     self.player.jump()
+                
 
     def get_reward(self, dead, end):
         reward = int(self.player.pos.x - self.player.pos_init.x) + self.seconds*2
@@ -141,7 +156,7 @@ class Game:
         self.screen.fill(BLACK)
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, self.camera.apply(sprite))
-        self.draw_text(str(MAX_TIME - self.seconds), 22, WHITE, WIDTH / 2, 15)
+        self.draw_text(str(MAX_TIME - int(self.seconds)), 22, WHITE, WIDTH / 2, 15)
         # *after* drawing everything, flip the display
         pg.display.flip()
 
@@ -161,12 +176,11 @@ class Game:
         self.screen.blit(text_surface, text_rect)
 
     def step(self, action):
-        self.seconds=int((pg.time.get_ticks()-self.start_ticks)/1000) #calculate how many seconds
-        self.clock.tick(FPS)
+        self.seconds=(pg.time.get_ticks()-self.start_ticks)/1000 #calculate how many seconds
         self.update(action)
-        self.draw()
+        #self.draw()
         
-        return self.reward ,  self.playing, self.player.pos, self.cost
+        return self.seconds ,  self.playing, self.player.pos, self.won
 
 class MySearchProblem(Problem):
     def __init__(self,actions, initial, goal):
@@ -175,12 +189,13 @@ class MySearchProblem(Problem):
     def actions(self, state):
         return self.actions
 
-    def h(self, state):
+    def h(self, state, seconds):
         #Returns least possible cost to reach a goal for the given state.
-        if (state[1] > 385.2 + TILESIZE):
+        if (state[1] > 384+ TILESIZE/2):
             r = 4000
         else:
             r = self.goal.x -state[0]
+            #r = self.goal.x -state[0] + seconds*10 
         return r
 
     def c(self, s, a, s1):
@@ -205,21 +220,53 @@ if AGENT:
     pos_init, goal, actions = g.new()
     print("init: ", pos_init, ", goal: ", goal)
     playing = True
-
+    draw = DRAW
+    realtime = REALTIME
     prob = MySearchProblem(actions, pos_init, goal)
     agent = aimabasedlrta.LRTAStarAgent(prob)
     pos = pos_init
-    count = 0
+    steps = 0
+    row_g = 0
+    seconds = 0
     while 1:
+        for event in pg.event.get():
+            if (event.type == pg.KEYDOWN and event.key == pg.K_p):
+                leave = False
+                while not leave:
+                    for event in pg.event.get():
+                        if (event.type == pg.KEYDOWN and event.key == pg.K_p):
+                            leave = True
+            if (event.type == pg.KEYDOWN and event.key == pg.K_d):
+                draw = not draw
+            if (event.type == pg.KEYDOWN and event.key == pg.K_r):
+                realtime = not realtime
+
         #time.sleep(0.1)
-        print("-----------------------")
-        action = agent(projx(pos),NOISE)
+        #print("-----------------------")
+        action = agent(projx(pos),NOISE,seconds)
         #print("action: ",action)
         pos2 = pos
-        reward, playing, next_pos, _ = g.step(action)
-        agent.update(projx(pos),action,projx(next_pos))
-        #RESET WORLD    
+        seconds, playing, next_pos, won = g.step(action)
+        if draw:
+            g.draw()
+        if realtime:
+            g.clock.tick(FPS)
+        agent.update(projx(pos),action,projx(next_pos),seconds)
+        #RESET WORLD 
+           
         if not playing:
+            steps += 1
+            if won:
+                row_g +=1
+                print(G,"end, steps",steps,W)
+                if row_g == 1000:
+                    if SAVEFILE:
+                        print('Saving agent!')
+                        agent.savetofile("agent"+MAP[:-4]+".pkl")
+                    break
+            else:
+                print(R,"end steps",steps,W)
+                row_g = 0
             g.new()
             pos = pos_init
         else:
