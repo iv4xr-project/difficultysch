@@ -225,10 +225,13 @@ if AGENT:
     prob = MySearchProblem(actions, pos_init, goal)
     agent = aimabasedlrta.LRTAStarAgent(prob)
     pos = pos_init
+    trial = 0
     steps = 0
+    bestsofar = 10000
     row_g = 0
     seconds = 0
     while 1:
+        steps += 1
         for event in pg.event.get():
             if (event.type == pg.KEYDOWN and event.key == pg.K_p):
                 leave = False
@@ -255,22 +258,27 @@ if AGENT:
         #RESET WORLD 
            
         if not playing:
-            steps += 1
+            
             if won:
+                bestsofar = min(steps,bestsofar)
                 row_g +=1
-                print(G,"end, steps",steps,W)
+                print(G,"end, trial",trial,"in",steps,"steps/",bestsofar,W)
                 if row_g == 1000:
                     if SAVEFILE:
                         print('Saving agent!')
                         agent.savetofile("agent"+MAP[:-4]+".pkl")
                     break
             else:
-                print(R,"end steps",steps,W)
+                print(R,"end, trial",trial,"in",steps,"steps/",bestsofar,W)
                 row_g = 0
             g.new()
             pos = pos_init
+            
+            steps = 0
+            trial += 1
         else:
             pos = vec(next_pos.x, next_pos.y)
+            #print(pos)
     pg.quit()
 
 #HUMAN RUN

@@ -74,7 +74,8 @@ class Player(pg.sprite.Sprite):
         self.acc.x += self.vel.x * PLAYER_FRICTION
         #equations of motion
         self.vel += self.acc
-        self.pos += self.vel + 0.5 * self.acc
+        # nao percebo este 0.5, acho que deveria ser 1.
+        self.pos += self.vel + 0.5 * self.acc 
 
         
         self.rect.midbottom = self.pos
