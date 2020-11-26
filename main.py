@@ -3,6 +3,7 @@ import random as rd
 import time
 import aimabasedlrta
 import sys
+import math
 from search import *
 from os import path
 from settings import *
@@ -32,6 +33,7 @@ class Game:
         self.pipes = pg.sprite.Group()
         self.flag = pg.sprite.Group()
         self.blocks = pg.sprite.Group()
+        self.spikes = pg.sprite.Group()
         self.font = pg.font.SysFont('Consolas', 30)
         self.reward = 0
         for row, tiles in enumerate(self.map.data):
@@ -47,6 +49,8 @@ class Game:
                     self.goal = vec(col,row) * TILESIZE
                 if tile == '3':
                     Block(self,col, row)
+                if tile == '4':
+                    Spike(self,col, row)
         self.camera = Camera(self.map.width, self.map.height)
         
         if self.human:
@@ -61,7 +65,7 @@ class Game:
 
     def load_data(self):
         game_folder = path.dirname(__file__)
-        self.map = Map(path.join(game_folder, MAP))
+        self.map = Map(path.join(game_folder,MAP))
 
     def run(self):
         # Game Loop
@@ -81,14 +85,34 @@ class Game:
             self.all_sprites.update()
         else:
             self.all_sprites.update(action)
+
         self.camera.update(self.player)
+        self.check_colisions()
+        if self.player.pos.y > self.map.height + TILESIZE/2:
+            self.reward, self.cost = self.get_reward(True, False)
+            if self.human:
+                print("Dead")
+                print("GAMEOVER\nSCORE:", self.reward)
+            self.won = False
+            self.playing = False
+        if self.seconds == MAX_TIME:
+            self.reward, self.cost = self.get_reward(False, False)
+            if self.human:
+                print("No time left")
+                print("GAMEOVER\nSCORE:", self.reward)
+            self.won = False
+            self.playing = False
+        self.reward, self.cost = self.get_reward(False, False)
+
+    def check_colisions(self):
+
         hits_ground = pg.sprite.spritecollide(self.player, self.ground, False)
         if hits_ground:
             if self.player.vel.y > 0:
                 self.player.pos.y = hits_ground[0].rect.top
                 self.player.vel.y = 0
             elif self.player.vel.y < 0:
-                time.sleep(5)
+                #time.sleep(5)
                 if self.player.was_c:
                     self.player.crouching = True
                     self.player.crouch()
@@ -113,21 +137,14 @@ class Game:
                 print("YOU WON\nSCORE:", self.reward)
             self.won = True
             self.playing = False
-        if self.player.pos.y > 384 + TILESIZE/2:
-            self.reward, self.cost = self.get_reward(True, False)
+
+        hits_spike = pg.sprite.spritecollide(self.player, self.spikes, False)
+        if hits_spike:
+            self.reward, self.cost = self.get_reward(True,True)
             if self.human:
-                print("Dead")
-                print("GAMEOVER\nSCORE:", self.reward)
+                print("YOU LOST\nSCORE:", self.reward)
             self.won = False
             self.playing = False
-        if self.seconds == MAX_TIME:
-            self.reward, self.cost = self.get_reward(False, False)
-            if self.human:
-                print("No time left")
-                print("GAMEOVER\nSCORE:", self.reward)
-            self.won = False
-            self.playing = False
-        self.reward, self.cost = self.get_reward(False, False)
 
     def events(self):
         # Game Loop - events
@@ -183,20 +200,49 @@ class Game:
         return self.seconds ,  self.playing, self.player.pos, self.won
 
 class MySearchProblem(Problem):
-    def __init__(self,actions, initial, goal):
+    def __init__(self,actions, initial, goal, game):
         super().__init__(actions,initial, goal)
+        self.game = game
 
     def actions(self, state):
         return self.actions
 
-    def h(self, state, seconds):
+    def h(self, state, bsf):
         #Returns least possible cost to reach a goal for the given state.
-        if (state[1] > 384+ TILESIZE/2):
+        """if (state[1] > 384+ TILESIZE/2):
+            r = 4000"""
+
+        if(not self.game.playing and not self.game.won):
             r = 4000
         else:
-            r = self.goal.x -state[0]
-            #r = self.goal.x -state[0] + seconds*10 
+            
+            #print(bsf)
+            #d = self.calc_dist(state)
+            d = self.goal.x - self.initial.x
+            #print(d)
+            d_step = d/bsf
+
+            #print(self.goal.x - state[0], "   ", self.calc_dist(state) )
+            #print((self.goal.x - state[0]) / d_step)
+            r = int((self.goal.x - state[0]) / d_step) - 1
+            #r = int(self.calc_dist(state) / d_step)  
+
+            #r = bsf
         return r
+
+    def calc_dist(self, state):
+        goal_up = self.goal.y - (8 * TILESIZE) - TILESIZE
+        print(goal_up, " <= " , state[1], " <= ", self.goal.y + TILESIZE)
+        if goal_up <= state[1] <= self.goal.y + TILESIZE:
+            return self.goal.x - state[0]
+        else:
+            closest_point = min([goal_up, self.goal.y], key=lambda x:abs(x-state[1]))
+            return math.sqrt( (state[0]- self.goal.x)**2  + (state[1]- closest_point)**2)
+        
+        #num = abs((goal_up - self.goal.y) * state[0]+ self.goal.x*(self.goal.y - goal_up))
+        #den = math.sqrt(pow(goal_up - self.goal.y ,2))
+        #return num/den
+
 
     def c(self, s, a, s1):
         #Returns a cost estimate for an agent to move from state 's' to state 's1'.
@@ -212,6 +258,11 @@ class MySearchProblem(Problem):
 def projx(s):
     return (round(s.x,2),round(s.y,2)) 
 
+def savereport(filename,beststeps, trials):
+    with open("maps/"+ filename+ "/report_"+filename+".txt", 'w') as fid:
+        fid.write("Converged in " + str(trials-1000) + " trials\n")
+        fid.write("Best solution in " + str(beststeps) + " steps\n")
+
 
 #ROBOT RUN
 if AGENT:
@@ -222,8 +273,10 @@ if AGENT:
     playing = True
     draw = DRAW
     realtime = REALTIME
-    prob = MySearchProblem(actions, pos_init, goal)
+    prob = MySearchProblem(actions, pos_init, goal, g)
     agent = aimabasedlrta.LRTAStarAgent(prob)
+    if LOADFILE:
+        agent.loadfromfile("maps/agent_"+MAP[5:-4]+".pkl")
     pos = pos_init
     trial = 0
     steps = 0
@@ -246,7 +299,7 @@ if AGENT:
 
         #time.sleep(0.1)
         #print("-----------------------")
-        action = agent(projx(pos),NOISE,seconds)
+        action = agent(projx(pos),NOISE,bestsofar)
         #print("action: ",action)
         pos2 = pos
         seconds, playing, next_pos, won = g.step(action)
@@ -254,19 +307,24 @@ if AGENT:
             g.draw()
         if realtime:
             g.clock.tick(FPS)
-        agent.update(projx(pos),action,projx(next_pos),seconds)
+        agent.update(projx(pos),action,projx(next_pos),bestsofar)
         #RESET WORLD 
            
         if not playing:
             
             if won:
                 bestsofar = min(steps,bestsofar)
-                row_g +=1
+                if(steps == bestsofar):
+                    row_g+=1
                 print(G,"end, trial",trial,"in",steps,"steps/",bestsofar,W)
                 if row_g == 1000:
-                    if SAVEFILE:
+                    if SAVEFILE and not LOADFILE:
                         print('Saving agent!')
-                        agent.savetofile("agent"+MAP[:-4]+".pkl")
+                        if(not os.path.isdir("maps/"+MAP[5:-4])):
+                            print("hello")
+                            os.mkdir("maps/"+MAP[5:-4])
+                        agent.savetofile("maps/"+MAP[5:-4] + "/agent" + MAP[5:-4]+ ".pkl")
+                        savereport(MAP[5:-4], steps, trial)
                     break
             else:
                 print(R,"end, trial",trial,"in",steps,"steps/",bestsofar,W)

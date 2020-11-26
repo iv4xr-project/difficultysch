@@ -83,18 +83,18 @@ class LRTAStarAgent:
             pickle.dump([self.result,self.H], fid)            
     
 
-    def update(self, os, a, ons, seconds):
+    def update(self, os, a, ons, bsf):
         s = hash(tuple(os))
                 
         self.result[(s, a)] = ons
         #print("update------------")
-        self.H[s] = min(self.LRTA_cost(os, b, self.result[(s, b)],self.H, seconds) for b in self.problem.actions)
+        self.H[s] = min(self.LRTA_cost(os, b, self.result[(s, b)],self.H, bsf) for b in self.problem.actions)
         
-    def __call__(self, os, noise = 0, seconds = 0):  # as of now s1 is a state rather than a percept
+    def __call__(self, os, noise = 0, bsf = 0):  # as of now s1 is a state rather than a percept
         s1 = hash(tuple(os))
         #print("\n\ncall pos: ", os ," -> hash ", s1,"\n\n")
         if s1 not in self.H:
-            self.H[s1] = self.problem.h(os, seconds)
+            self.H[s1] = self.problem.h(os, bsf)
             for a in self.problem.actions:
                 self.result[(s1,a)]=None
             
@@ -105,22 +105,22 @@ class LRTAStarAgent:
                 return a
 
         a = min(self.problem.actions,
-                     key=lambda b: self.LRTA_cost(os, b, self.result[(s1, b)], self.H, seconds))
+                     key=lambda b: self.LRTA_cost(os, b, self.result[(s1, b)], self.H, bsf))
 
         if np.random.rand()>noise:
             return a
         else:
             return np.random.choice(self.problem.actions,1)[0]
 
-    def LRTA_cost(self, s, a, s1, H, seconds):
+    def LRTA_cost(self, s, a, s1, H, bsf):
         
         if s1 is None:
-            return self.problem.h(s, seconds)
+            return self.problem.h(s, bsf)
         else:
             try:
                 return self.problem.c(s, a, s1) + self.H[hash(tuple(s1))]
             except:
-                return self.problem.c(s, a, s1) + self.problem.h(s1, seconds)
+                return self.problem.c(s, a, s1) + self.problem.h(s1, bsf)
 
 
 

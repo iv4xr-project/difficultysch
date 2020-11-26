@@ -1,12 +1,12 @@
 # game options/settings
 TITLE = "MARIO"
-MAP = 'map_dif1.txt'
+MAP = "maps/map_dif1.txt"
 WIDTH = 480
 HEIGHT = 416
 FPS = 60
 
 #Player properties
-PLAYER_ACC = 0.5
+PLAYER_ACC = 0.7
 PLAYER_FRICTION = -0.12
 PLAYER_GRAV = 0.8
 PLAYER_JUMP = 18
@@ -31,7 +31,8 @@ ACTIONS = [2,3,0]
 AGENT = True
 DRAW = True
 REALTIME = True
-SAVEFILE = False
+SAVEFILE = True
+LOADFILE = False
 NOISE = 0.0
 
 
