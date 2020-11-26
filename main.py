@@ -219,17 +219,18 @@ class MySearchProblem(Problem):
             #print(d)
             d_step = d/bsf
 
-            
-            r = int(self.goal.x - state[0] / d_step)                           #working for no reason          
+            #r = int(self.goal.x - state[0] / d_step)                           #working for no reason          
             #r = int((self.goal.x - state[0]) / d_step)
-            #r = int(self.calc_dist(state) / d_step)
+            #r = int(self.calc_dist(state) / d_step)                           #supposed to work
             
+            r = int((self.goal.x - state[0]/ 5))
+
             #print(r)
         return r
 
     def calc_dist(self, state):
         goal_up = self.goal.y - (8 * TILESIZE) - TILESIZE
-        print(goal_up, " <= " , state[1], " <= ", self.goal.y + TILESIZE)
+        #print(goal_up, " <= " , state[1], " <= ", self.goal.y + TILESIZE)
         if goal_up <= state[1] <= self.goal.y + TILESIZE:
             return self.goal.x - state[0]
         else:

@@ -1,6 +1,6 @@
 # game options/settings
 TITLE = "MARIO"
-MAP = "maps/map_dif1.txt"
+MAP = "maps/map_dif3.txt"
 WIDTH = 480
 HEIGHT = 416
 FPS = 60

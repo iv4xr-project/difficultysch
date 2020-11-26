@@ -34,13 +34,14 @@ class Player(pg.sprite.Sprite):
 
     def update(self, action = 0):
         self.acc = vec(0,PLAYER_GRAV)
-
+        p = False
         if self.game.human:
             keys = pg.key.get_pressed()
             if keys[pg.K_LEFT] or keys[pg.K_a]:
                 self.acc.x = -PLAYER_ACC
             if keys[pg.K_RIGHT] or keys[pg.K_d]:
                 self.acc.x = PLAYER_ACC
+                p = True
             if keys[pg.K_s]:
                 self.crouching = True
                 self.was_c = True
@@ -69,7 +70,8 @@ class Player(pg.sprite.Sprite):
             elif action == 5:
                 self.acc.x = PLAYER_ACC
                 self.jump()
-        
+        if p:
+            pos_ant = vec(self.pos.x, self.pos.y)
         #apply friction
         self.acc.x += self.vel.x * PLAYER_FRICTION
         #equations of motion
@@ -77,7 +79,8 @@ class Player(pg.sprite.Sprite):
         # nao percebo este 0.5, acho que deveria ser 1.
         self.pos += self.vel + 0.5 * self.acc 
 
-        
+        if p:
+            print(self.pos.x - pos_ant.x)
         self.rect.midbottom = self.pos
 
     

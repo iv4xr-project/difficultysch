@@ -1,2 +1,2 @@
-Converged in 77512 trials
-Best solution in 201 steps
+Converged in 313082 trials
+Best solution in 200 steps
