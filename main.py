@@ -209,9 +209,6 @@ class MySearchProblem(Problem):
 
     def h(self, state, bsf):
         #Returns least possible cost to reach a goal for the given state.
-        """if (state[1] > 384+ TILESIZE/2):
-            r = 4000"""
-
         if(not self.game.playing and not self.game.won):
             r = 4000
         else:
@@ -222,12 +219,12 @@ class MySearchProblem(Problem):
             #print(d)
             d_step = d/bsf
 
-            #print(self.goal.x - state[0], "   ", self.calc_dist(state) )
-            #print((self.goal.x - state[0]) / d_step)
-            r = int((self.goal.x - state[0]) / d_step) - 1
-            #r = int(self.calc_dist(state) / d_step)  
-
-            #r = bsf
+            
+            r = int(self.goal.x - state[0] / d_step)                           #working for no reason          
+            #r = int((self.goal.x - state[0]) / d_step)
+            #r = int(self.calc_dist(state) / d_step)
+            
+            #print(r)
         return r
 
     def calc_dist(self, state):
@@ -239,11 +236,6 @@ class MySearchProblem(Problem):
             closest_point = min([goal_up, self.goal.y], key=lambda x:abs(x-state[1]))
             return math.sqrt( (state[0]- self.goal.x)**2  + (state[1]- closest_point)**2)
         
-        #num = abs((goal_up - self.goal.y) * state[0]+ self.goal.x*(self.goal.y - goal_up))
-        #den = math.sqrt(pow(goal_up - self.goal.y ,2))
-        #return num/den
-
-
     def c(self, s, a, s1):
         #Returns a cost estimate for an agent to move from state 's' to state 's1'.
         return 1
