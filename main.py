@@ -25,6 +25,7 @@ class Game:
         self.font_name = pg.font.match_font(FONT_NAME)
         self.actions = ACTIONS
         self.won = False
+        self.passwalls = False
 
     def new(self):
         # start a new game
@@ -34,6 +35,7 @@ class Game:
         self.flag = pg.sprite.Group()
         self.blocks = pg.sprite.Group()
         self.spikes = pg.sprite.Group()
+        self.diamonds = pg.sprite.Group()
         self.font = pg.font.SysFont('Consolas', 30)
         self.reward = 0
         for row, tiles in enumerate(self.map.data):
@@ -51,6 +53,8 @@ class Game:
                     Block(self,col, row)
                 if tile == '4':
                     Spike(self,col, row)
+                if tile == 'D':
+                    Diamond(self,col, row)                    
         self.camera = Camera(self.map.width, self.map.height)
         
         if self.human:
@@ -118,8 +122,9 @@ class Game:
                     self.player.crouch()
                 self.player.pos.y = hits_ground[0].rect.bottom + self.player.rect.height
                 self.player.vel.y = 0
+                
         hits_pipe = pg.sprite.spritecollide(self.player, self.pipes, False)
-        if hits_pipe:
+        if hits_pipe and not self.passwalls:
             if self.player.pos.x < hits_pipe[0].rect.left and hits_pipe[0].rect.top <= self.player.pos.y- self.player.rect.height/2:
                 self.player.pos.x = hits_pipe[0].rect.left - self.player.rect.width/2
                 self.player.vel.x = 0
@@ -137,6 +142,7 @@ class Game:
                 print("YOU WON\nSCORE:", self.reward)
             self.won = True
             self.playing = False
+            self.passwalls = False
 
         hits_spike = pg.sprite.spritecollide(self.player, self.spikes, False)
         if hits_spike:
@@ -145,6 +151,11 @@ class Game:
                 print("YOU LOST\nSCORE:", self.reward)
             self.won = False
             self.playing = False
+            self.passwalls = False
+            
+        hits_diamond = pg.sprite.spritecollide(self.player, self.diamonds, False)
+        if hits_diamond:
+            self.passwalls = True
 
     def events(self):
         # Game Loop - events
@@ -276,9 +287,12 @@ if AGENT:
     bestsofar = 10000
     row_g = 0
     seconds = 0
-    while 1:
+    notquit = True
+    while notquit:
         steps += 1
         for event in pg.event.get():
+            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
+                notquit = False
             if (event.type == pg.KEYDOWN and event.key == pg.K_p):
                 leave = False
                 while not leave:
@@ -327,6 +341,9 @@ if AGENT:
             
             steps = 0
             trial += 1
+            
+            # deveria aqui algum reset de estado. por agora so
+            g.passwalls = False
         else:
             pos = vec(next_pos.x, next_pos.y)
             #print(pos)
