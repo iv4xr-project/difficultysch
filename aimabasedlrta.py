@@ -87,7 +87,8 @@ class LRTAStarAgent:
         s = hash(tuple(os))
                 
         self.result[(s, a)] = ons
-        #print("update------------")
+        if bsf == 1:
+            print("--------------------------")
         self.H[s] = min(self.LRTA_cost(os, b, self.result[(s, b)],self.H, bsf) for b in self.problem.actions)
         
     def __call__(self, os, noise = 0, bsf = 0):  # as of now s1 is a state rather than a percept
@@ -105,9 +106,9 @@ class LRTAStarAgent:
                 return a
 
         a = min(self.problem.actions,
-                     key=lambda b: self.LRTA_cost(os, b, self.result[(s1, b)], self.H, bsf))
+                     key=lambda b: self.LRTA_cost(os, b, self.result[(s1, b)], self.H, 0))
 
-        if np.random.rand()>noise:
+        if np.random.rand()>=noise:
             return a
         else:
             return np.random.choice(self.problem.actions,1)[0]
@@ -118,6 +119,8 @@ class LRTAStarAgent:
             return self.problem.h(s, bsf)
         else:
             try:
+                if bsf==1:
+                    print("s: ",s ,"-> s1:", s1 ,":    ", self.H[hash(tuple(s1))])
                 return self.problem.c(s, a, s1) + self.H[hash(tuple(s1))]
             except:
                 return self.problem.c(s, a, s1) + self.problem.h(s1, bsf)

@@ -1,9 +1,10 @@
 # game options/settings
 TITLE = "MARIO"
-MAP = "maps/map_dif3.txt"
-WIDTH = 480
+MAP = "map_dif1.txt"
+WIDTH = 544
 HEIGHT = 416
 FPS = 60
+PHOTOMODE = False
 
 #Player properties
 PLAYER_ACC = 0.7
@@ -22,18 +23,19 @@ BROWN = (165,42,42)
 
 TILESIZE = 32
 FONT_NAME = 'arial'
-MAX_TIME = 20
+MAX_TIME = 10
 
 #SPACESTATE 0 = NOP, 1 = left, 2 = right, 3 = jump, 4 - left+jump, 5 - right+jump
-ACTIONS = [2,3,0]
+ACTIONS = [2,3,0,1]
 
 #AGENT
 AGENT = True
 DRAW = True
 REALTIME = True
 SAVEFILE = True
-LOADFILE = False
-NOISE = 0.0
+LOADFILE = True
+LEARNING = False
+NOISE = 0.05
 
 
 #console color

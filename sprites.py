@@ -11,7 +11,7 @@ class Player(pg.sprite.Sprite):
         self.image = pg.Surface((TILESIZE,TILESIZE*2))
         self.image.fill(YELLOW)
         self.rect = self.image.get_rect()
-        self.pos = vec(x, y) * TILESIZE
+        self.pos = (vec(x, y) * TILESIZE) + vec(0,TILESIZE)
         self.vel = vec(0,0)
         self.acc = vec(0,0)
         self.pos_init = vec(x,y) * TILESIZE
@@ -77,10 +77,11 @@ class Player(pg.sprite.Sprite):
         #equations of motion
         self.vel += self.acc
         # nao percebo este 0.5, acho que deveria ser 1.
-        self.pos += self.vel + 0.5 * self.acc 
+        #self.pos += self.vel + 0.5 * self.acc 
+        self.pos += self.vel +  self.acc 
 
-        if p:
-            print(self.pos.x - pos_ant.x)
+        #if p:
+            #print(self.pos.x - pos_ant.x)
         self.rect.midbottom = self.pos
 
     

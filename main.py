@@ -12,16 +12,20 @@ from tilemap import *
 vec = pg.math.Vector2
 
 class Game:
-    def __init__(self, human = True):
+    def __init__(self, human = True, map = MAP):
         # initialize game window, etc
         pg.init()
         pg.mixer.init()
-        self.screen = pg.display.set_mode((WIDTH, HEIGHT))
+        self.load_data(map)
+        if(PHOTOMODE):
+            self.screen = pg.display.set_mode((self.map.width, self.map.height))
+        else:
+            self.screen = pg.display.set_mode((WIDTH, HEIGHT))
         pg.display.set_caption(TITLE)
         self.clock = pg.time.Clock()
         self.running = True
         self.human = human
-        self.load_data()
+        
         self.font_name = pg.font.match_font(FONT_NAME)
         self.actions = ACTIONS
         self.won = False
@@ -38,6 +42,7 @@ class Game:
         self.diamonds = pg.sprite.Group()
         self.font = pg.font.SysFont('Consolas', 30)
         self.reward = 0
+        self.steps = 0
         for row, tiles in enumerate(self.map.data):
             for col, tile in enumerate(tiles):
                 if tile == '1':
@@ -56,7 +61,6 @@ class Game:
                 if tile == 'D':
                     Diamond(self,col, row)                    
         self.camera = Camera(self.map.width, self.map.height)
-        
         if self.human:
             self.run()
         else:
@@ -67,9 +71,12 @@ class Game:
         #goal = [self.goal.x,self.goal.y]
         return self.player.pos_init, self.goal, self.actions
 
-    def load_data(self):
-        game_folder = path.dirname(__file__)
-        self.map = Map(path.join(game_folder,MAP))
+    def load_data(self, map):
+        #game_folder = path.dirname(__file__)
+        #print(game_folder)
+        game_folder = "maps/"
+        print(game_folder)
+        self.map = Map(path.join(game_folder,map))
 
     def run(self):
         # Game Loop
@@ -82,9 +89,11 @@ class Game:
             self.update()
             self.draw()
         
+        
 
     def update(self, action = 0):
         # Game Loop - Update
+        self.steps += 1
         if self.human:
             self.all_sprites.update()
         else:
@@ -99,7 +108,7 @@ class Game:
                 print("GAMEOVER\nSCORE:", self.reward)
             self.won = False
             self.playing = False
-        if self.seconds == MAX_TIME:
+        if self.seconds == MAX_TIME :           #or (not self.human and steps/FPS == MAX_TIME)
             self.reward, self.cost = self.get_reward(False, False)
             if self.human:
                 print("No time left")
@@ -184,9 +193,13 @@ class Game:
         self.screen.fill(BLACK)
         for sprite in self.all_sprites:
             self.screen.blit(sprite.image, self.camera.apply(sprite))
-        self.draw_text(str(MAX_TIME - int(self.seconds)), 22, WHITE, WIDTH / 2, 15)
+        if not PHOTOMODE:
+            self.draw_text(str(MAX_TIME - int(self.seconds)), 22, WHITE, WIDTH / 2, 15)
         # *after* drawing everything, flip the display
         pg.display.flip()
+        if PHOTOMODE:
+                while 1:
+                    continue
 
     def show_start_screen(self):
         # game splash/start screen
@@ -222,19 +235,22 @@ class MySearchProblem(Problem):
         #Returns least possible cost to reach a goal for the given state.
         if(not self.game.playing and not self.game.won):
             r = 4000
-        else:
+        else :
             
             #print(bsf)
             #d = self.calc_dist(state)
             d = self.goal.x - self.initial.x
             #print(d)
-            d_step = d/bsf
+            #d_step = d/bsf
 
             #r = int(self.goal.x - state[0] / d_step)                           #working for no reason          
             #r = int((self.goal.x - state[0]) / d_step)
             #r = int(self.calc_dist(state) / d_step)                           #supposed to work
             
-            r = int((self.goal.x - state[0]/ 5))
+            #r = math.ceil((self.goal.x - state[0]-TILESIZE/2)/ 1)
+            r = math.ceil((self.goal.x - state[0]-TILESIZE/2)/ 5)
+            #r = math.ceil((self.goal.x - state[0]-TILESIZE/2)/ 5.8)
+            #r = int(self.calc_dist(state) / 5) 
 
             #print(r)
         return r
@@ -268,90 +284,167 @@ def savereport(filename,beststeps, trials):
         fid.write("Best solution in " + str(beststeps) + " steps\n")
 
 
-#ROBOT RUN
-if AGENT:
-    g = Game(False)
-    g.show_start_screen()
+def play(map, trials, noise):
+    MAP = map
+    g = Game(False, map)
     pos_init, goal, actions = g.new()
-    print("init: ", pos_init, ", goal: ", goal)
-    playing = True
-    draw = DRAW
-    realtime = REALTIME
     prob = MySearchProblem(actions, pos_init, goal, g)
     agent = aimabasedlrta.LRTAStarAgent(prob)
-    if LOADFILE:
-        agent.loadfromfile("maps/agent_"+MAP[5:-4]+".pkl")
-    pos = pos_init
-    trial = 0
+    agent.loadfromfile("maps/"+MAP[:-4]+"/agent"+MAP[:-4]+".pkl")
+    completed = 0
+    fla = -1
     steps = 0
+    trial = 0
+    comp_score = 0
     bestsofar = 10000
-    row_g = 0
-    seconds = 0
-    notquit = True
-    while notquit:
+    completed = 0
+    pos = pos_init
+    maxscore = FPS*MAX_TIME
+    while trial < trials:
         steps += 1
-        for event in pg.event.get():
-            if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
-                notquit = False
-            if (event.type == pg.KEYDOWN and event.key == pg.K_p):
-                leave = False
-                while not leave:
-                    for event in pg.event.get():
-                        if (event.type == pg.KEYDOWN and event.key == pg.K_p):
-                            leave = True
-            if (event.type == pg.KEYDOWN and event.key == pg.K_d):
-                draw = not draw
-            if (event.type == pg.KEYDOWN and event.key == pg.K_r):
-                realtime = not realtime
-
-        #time.sleep(0.1)
-        #print("-----------------------")
-        action = agent(projx(pos),NOISE,bestsofar)
-        #print("action: ",action)
-        pos2 = pos
+        if(trial == 0):
+            action = agent(projx(pos),0,fla)
+        else:
+            action = agent(projx(pos),noise,fla)
         seconds, playing, next_pos, won = g.step(action)
-        if draw:
-            g.draw()
-        if realtime:
-            g.clock.tick(FPS)
-        agent.update(projx(pos),action,projx(next_pos),bestsofar)
-        #RESET WORLD 
-           
+        g.draw()
+        g.clock.tick(FPS)
         if not playing:
-            
             if won:
-                bestsofar = min(steps,bestsofar)
-                if(steps == bestsofar):
-                    row_g+=1
-                print(G,"end, trial",trial,"in",steps,"steps/",bestsofar,W)
-                if row_g == 1000:
-                    if SAVEFILE and not LOADFILE:
-                        print('Saving agent!')
-                        if(not os.path.isdir("maps/"+MAP[5:-4])):
-                            print("hello")
-                            os.mkdir("maps/"+MAP[5:-4])
-                        agent.savetofile("maps/"+MAP[5:-4] + "/agent" + MAP[5:-4]+ ".pkl")
-                        savereport(MAP[5:-4], steps, trial)
-                    break
-            else:
-                print(R,"end, trial",trial,"in",steps,"steps/",bestsofar,W)
-                row_g = 0
+                #stats for analysis
+                completed +=1
+                comp_score += steps
+                bestsofar = min(steps,bestsofar)         
+            
             g.new()
             pos = pos_init
-            
+                
             steps = 0
             trial += 1
-            
-            # deveria aqui algum reset de estado. por agora so
             g.passwalls = False
         else:
             pos = vec(next_pos.x, next_pos.y)
-            #print(pos)
-    pg.quit()
+    print("comp:", completed, "score: ",  comp_score)
+    return completed, comp_score, maxscore - bestsofar, maxscore
 
-#HUMAN RUN
-else:
-    g = Game()
-    while g.running:
-        g.new()
-    pg.quit()
+def main():
+    #ROBOT RUN
+    if AGENT:
+        g = Game(False)
+        g.show_start_screen()
+        pos_init, goal, actions = g.new()
+        print("init: ", pos_init, ", goal: ", goal)
+        playing = True
+        draw = DRAW
+        realtime = REALTIME
+        prob = MySearchProblem(actions, pos_init, goal, g)
+        agent = aimabasedlrta.LRTAStarAgent(prob)
+        if LOADFILE:
+            agent.loadfromfile("maps/"+MAP[:-4]+"/agent"+MAP[:-4]+".pkl")
+        pos = pos_init
+        trial = 0
+        steps = 0
+        bestsofar = 10000
+        row_g = 0
+        seconds = 0
+        completed = 0
+        comp_score = 0
+        show_dict = False
+        fla = -1
+        maxscore = FPS*MAX_TIME
+        notquit = True
+        while notquit:
+            if LOADFILE and trial == 100000:
+                with open("maps/"+ MAP[:-4]+ "/report_"+MAP[:-4]+".txt", 'r') as fid:
+                    data = fid.readlines()
+
+                if len(data) == 2:   
+                    data.append("Completed the level " + str(completed/100000 *100) + "% of the times (100000 with " + str(NOISE) + " noise)\n")
+                    data.append("Average score: " + str(maxscore - round(comp_score/completed,2))+ " out of possible " + str(maxscore - bestsofar))
+                else:
+                    data[2] = "Completed the level " + str(completed/100000 *100) + "% of the times (100000 with " + str(NOISE) + " noise)\n"
+                    data[3] = "Average score: " + str(maxscore - round(comp_score/completed,2))+ " out of possible " + str(maxscore - bestsofar)
+                    
+                with open("maps/"+ MAP[:-4]+ "/report_"+MAP[:-4]+".txt", 'w') as fid:
+                    fid.writelines( data )    
+                print("TEST OVER, Completed the level ", completed/100000*100 ,"% of the times")
+                break
+            steps += 1
+            for event in pg.event.get():
+                if event.type == pg.QUIT or (event.type == pg.KEYDOWN and event.key == pg.K_ESCAPE):
+                    notquit = False
+                if (event.type == pg.KEYDOWN and event.key == pg.K_p):
+                    leave = False
+                    while not leave:
+                        for event in pg.event.get():
+                            if (event.type == pg.KEYDOWN and event.key == pg.K_p):
+                                leave = True
+                if (event.type == pg.KEYDOWN and event.key == pg.K_d):
+                    draw = not draw
+                if (event.type == pg.KEYDOWN and event.key == pg.K_r):
+                    realtime = not realtime
+                if (event.type == pg.KEYDOWN and event.key == pg.K_m):
+                    fla = fla * -1
+                    show_dict = not show_dict
+            if(trial == 0):
+                action = agent(projx(pos),0,fla)
+            else:
+                action = agent(projx(pos),NOISE,fla)
+            #print("action: ",action)
+            
+            seconds, playing, next_pos, won = g.step(action)
+            if draw:
+                g.draw()
+            if realtime:
+                g.clock.tick(FPS)
+            if LEARNING:
+                agent.update(projx(pos),action,projx(next_pos),fla)
+
+            #RESET WORLD         
+            if not playing:    
+                if won:
+                    
+                    #stats for analysis
+                    completed +=1
+                    comp_score += steps
+
+                    bestsofar = min(steps,bestsofar)
+                    if(steps == bestsofar):
+                        row_g+=1
+                    print(G,"end, trial",trial,"in",steps,"steps/",bestsofar, W)
+                    if row_g == 1000 and not LOADFILE:
+                        if SAVEFILE:
+                            print('Saving agent!')
+                            if(not os.path.isdir("maps/"+MAP[:-4])):
+                                print("hello")
+                                os.mkdir("maps/"+MAP[:-4])
+                            agent.savetofile("maps/"+MAP[:-4] + "/agent" + MAP[:-4]+ ".pkl")
+                            savereport(MAP[5:-4], steps, trial)
+                        break
+                else:
+                    print(R,"end, trial",trial,"in",steps,"steps/",bestsofar, W)
+                    row_g = 0
+
+
+                g.new()
+                pos = pos_init
+                
+                steps = 0
+                trial += 1
+                
+                # deveria aqui algum reset de estado. por agora so
+                g.passwalls = False
+            else:
+                pos = vec(next_pos.x, next_pos.y)
+                #print(pos)
+        pg.quit()
+
+    #HUMAN RUN
+    else:
+        g = Game()
+        while g.running:
+            g.new()
+        pg.quit()
+
+if __name__ == "__main__":
+    main()

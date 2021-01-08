@@ -1,2 +1,4 @@
-Converged in 566 trials
-Best solution in 94 steps
+Converged in 1150 trials
+Best solution in 93 steps
+Completed the level 56.672% of the times (100000 with 0.1 noise)
+Average score: 500.40999999999997 out of possible 507
