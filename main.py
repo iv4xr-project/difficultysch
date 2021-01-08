@@ -72,10 +72,7 @@ class Game:
         return self.player.pos_init, self.goal, self.actions
 
     def load_data(self, map):
-        #game_folder = path.dirname(__file__)
-        #print(game_folder)
         game_folder = "maps/"
-        print(game_folder)
         self.map = Map(path.join(game_folder,map))
 
     def run(self):
@@ -198,8 +195,9 @@ class Game:
         # *after* drawing everything, flip the display
         pg.display.flip()
         if PHOTOMODE:
-                while 1:
-                    continue
+            pg.image.save(self.screen,"screenshot_"+ MAP[:4] +".jpg")
+            while 1:
+                continue
 
     def show_start_screen(self):
         # game splash/start screen
@@ -231,28 +229,14 @@ class MySearchProblem(Problem):
     def actions(self, state):
         return self.actions
 
-    def h(self, state, bsf):
-        #Returns least possible cost to reach a goal for the given state.
+    def h(self, state):
+        
+        #IF LOST
         if(not self.game.playing and not self.game.won):
             r = 4000
+        #Returns least possible cost to reach a goal for the given state.
         else :
-            
-            #print(bsf)
-            #d = self.calc_dist(state)
-            d = self.goal.x - self.initial.x
-            #print(d)
-            #d_step = d/bsf
-
-            #r = int(self.goal.x - state[0] / d_step)                           #working for no reason          
-            #r = int((self.goal.x - state[0]) / d_step)
-            #r = int(self.calc_dist(state) / d_step)                           #supposed to work
-            
-            #r = math.ceil((self.goal.x - state[0]-TILESIZE/2)/ 1)
             r = math.ceil((self.goal.x - state[0]-TILESIZE/2)/ 5)
-            #r = math.ceil((self.goal.x - state[0]-TILESIZE/2)/ 5.8)
-            #r = int(self.calc_dist(state) / 5) 
-
-            #print(r)
         return r
 
     def calc_dist(self, state):
@@ -292,7 +276,6 @@ def play(map, trials, noise):
     agent = aimabasedlrta.LRTAStarAgent(prob)
     agent.loadfromfile("maps/"+MAP[:-4]+"/agent"+MAP[:-4]+".pkl")
     completed = 0
-    fla = -1
     steps = 0
     trial = 0
     comp_score = 0
@@ -303,12 +286,12 @@ def play(map, trials, noise):
     while trial < trials:
         steps += 1
         if(trial == 0):
-            action = agent(projx(pos),0,fla)
+            action = agent(projx(pos),0)
         else:
-            action = agent(projx(pos),noise,fla)
+            action = agent(projx(pos),noise)
         seconds, playing, next_pos, won = g.step(action)
-        g.draw()
-        g.clock.tick(FPS)
+        #g.draw()
+        #g.clock.tick(FPS)
         if not playing:
             if won:
                 #stats for analysis
@@ -324,7 +307,6 @@ def play(map, trials, noise):
             g.passwalls = False
         else:
             pos = vec(next_pos.x, next_pos.y)
-    print("comp:", completed, "score: ",  comp_score)
     return completed, comp_score, maxscore - bestsofar, maxscore
 
 def main():
@@ -350,7 +332,6 @@ def main():
         completed = 0
         comp_score = 0
         show_dict = False
-        fla = -1
         maxscore = FPS*MAX_TIME
         notquit = True
         while notquit:
@@ -384,12 +365,11 @@ def main():
                 if (event.type == pg.KEYDOWN and event.key == pg.K_r):
                     realtime = not realtime
                 if (event.type == pg.KEYDOWN and event.key == pg.K_m):
-                    fla = fla * -1
                     show_dict = not show_dict
             if(trial == 0):
-                action = agent(projx(pos),0,fla)
+                action = agent(projx(pos),0)
             else:
-                action = agent(projx(pos),NOISE,fla)
+                action = agent(projx(pos),NOISE)
             #print("action: ",action)
             
             seconds, playing, next_pos, won = g.step(action)
@@ -398,7 +378,7 @@ def main():
             if realtime:
                 g.clock.tick(FPS)
             if LEARNING:
-                agent.update(projx(pos),action,projx(next_pos),fla)
+                agent.update(projx(pos),action,projx(next_pos))
 
             #RESET WORLD         
             if not playing:    
@@ -419,7 +399,7 @@ def main():
                                 print("hello")
                                 os.mkdir("maps/"+MAP[:-4])
                             agent.savetofile("maps/"+MAP[:-4] + "/agent" + MAP[:-4]+ ".pkl")
-                            savereport(MAP[5:-4], steps, trial)
+                            savereport(MAP[:-4], steps, trial)
                         break
                 else:
                     print(R,"end, trial",trial,"in",steps,"steps/",bestsofar, W)

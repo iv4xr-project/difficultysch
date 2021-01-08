@@ -3,7 +3,6 @@ from settings import *
 
 class Map:
     def __init__(self, filename):
-        print(filename)
         self.data = []
         with open(filename,'rt') as f:
             for line in f:
@@ -33,6 +32,3 @@ class Camera:
         x = max(-(self.width - WIDTH),x)            #right
         y = max(-(self.height - HEIGHT),y)          #bottom
         self.camera = pg.Rect(x, y, self.width, self.height)
-
-    def photomode():
-        self.camera = pg.Rect(0, 0, self.width, self.height)

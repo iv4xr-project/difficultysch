@@ -1,6 +1,6 @@
 # game options/settings
 TITLE = "MARIO"
-MAP = "map_dif1.txt"
+MAP = "map_dif2.txt"
 WIDTH = 544
 HEIGHT = 416
 FPS = 60
@@ -35,7 +35,7 @@ REALTIME = True
 SAVEFILE = True
 LOADFILE = True
 LEARNING = False
-NOISE = 0.05
+NOISE = 0.00
 
 
 #console color
