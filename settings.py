@@ -1,6 +1,6 @@
 # game options/settings
 TITLE = "MARIO"
-MAP = "map_dif2.txt"
+MAP = "map.txt"
 WIDTH = 544
 HEIGHT = 416
 FPS = 60
@@ -29,7 +29,7 @@ MAX_TIME = 10
 ACTIONS = [2,3,0,1]
 
 #AGENT
-AGENT = True
+AGENT = False
 DRAW = True
 REALTIME = True
 SAVEFILE = True

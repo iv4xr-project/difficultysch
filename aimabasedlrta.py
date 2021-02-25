@@ -89,7 +89,7 @@ class LRTAStarAgent:
         self.result[(s, a)] = ons
         self.H[s] = min(self.LRTA_cost(os, b, self.result[(s, b)],self.H) for b in self.problem.actions)
         
-    def __call__(self, os, noise = 0):  # as of now s1 is a state rather than a percept
+    def __call__(self, os):  # as of now s1 is a state rather than a percept
         s1 = hash(tuple(os))
         #print("\n\ncall pos: ", os ," -> hash ", s1,"\n\n")
         if s1 not in self.H:
@@ -106,10 +106,7 @@ class LRTAStarAgent:
         a = min(self.problem.actions,
                      key=lambda b: self.LRTA_cost(os, b, self.result[(s1, b)], self.H))
 
-        if np.random.rand()>=noise:
-            return a
-        else:
-            return np.random.choice(self.problem.actions,1)[0]
+        return a
 
     def LRTA_cost(self, s, a, s1, H):
         

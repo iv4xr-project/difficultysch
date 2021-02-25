@@ -4,7 +4,7 @@ from settings import *
 vec = pg.math.Vector2
 
 class Player(pg.sprite.Sprite):
-    def __init__(self,game, x, y):
+    def __init__(self,game, x, y, gravity_factor, acceleration_factor):
         self.groups = game.all_sprites
         pg.sprite.Sprite.__init__(self, self.groups)
         self.game = game
@@ -17,6 +17,8 @@ class Player(pg.sprite.Sprite):
         self.pos_init = vec(x,y) * TILESIZE
         self.was_c = False
         self.crouching = False
+        self.gravity_factor = gravity_factor
+        self.acceleration_factor = acceleration_factor
     
     def jump(self):
         #jump only if standing
@@ -33,14 +35,14 @@ class Player(pg.sprite.Sprite):
         self.rect = self.image.get_rect()
 
     def update(self, action = 0):
-        self.acc = vec(0,PLAYER_GRAV)
+        self.acc = vec(0,PLAYER_GRAV*(1+self.gravity_factor))
         p = False
         if self.game.human:
             keys = pg.key.get_pressed()
             if keys[pg.K_LEFT] or keys[pg.K_a]:
-                self.acc.x = -PLAYER_ACC
+                self.acc.x = -PLAYER_ACC * (1+self.acceleration_factor)
             if keys[pg.K_RIGHT] or keys[pg.K_d]:
-                self.acc.x = PLAYER_ACC
+                self.acc.x = PLAYER_ACC * (1+self.acceleration_factor)
                 p = True
             if keys[pg.K_s]:
                 self.crouching = True
@@ -59,16 +61,16 @@ class Player(pg.sprite.Sprite):
                 self.rect = self.image.get_rect()
         else:
             if action == 1:
-                self.acc.x = -PLAYER_ACC
+                self.acc.x = -PLAYER_ACC * (1+self.acceleration_factor)
             elif action == 2:
-                self.acc.x = PLAYER_ACC
+                self.acc.x = PLAYER_ACC * (1+self.acceleration_factor)
             elif action == 3:
                 self.jump()
             elif action == 4:
-                self.acc.x = -PLAYER_ACC
+                self.acc.x = -PLAYER_ACC * (1+self.acceleration_factor)
                 self.jump()
             elif action == 5:
-                self.acc.x = PLAYER_ACC
+                self.acc.x = PLAYER_ACC * (1+self.acceleration_factor)
                 self.jump()
         if p:
             pos_ant = vec(self.pos.x, self.pos.y)

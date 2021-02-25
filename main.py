@@ -12,7 +12,7 @@ from tilemap import *
 vec = pg.math.Vector2
 
 class Game:
-    def __init__(self, human = True, map = MAP):
+    def __init__(self, human = True, map = MAP, gravity_factor= 0, acceleration_factor= 0):
         # initialize game window, etc
         pg.init()
         pg.mixer.init()
@@ -28,6 +28,10 @@ class Game:
         
         self.font_name = pg.font.match_font(FONT_NAME)
         self.actions = ACTIONS
+
+        self.gravity_factor = gravity_factor
+        self.acceleration_factor = acceleration_factor
+        
         self.won = False
         self.passwalls = False
 
@@ -48,7 +52,7 @@ class Game:
                 if tile == '1':
                     Ground(self, col, row)
                 if tile == 'P':
-                    self.player = Player(self, col, row)
+                    self.player = Player(self, col, row, self.gravity_factor, self.acceleration_factor)
                 if tile == '2':
                     Pipe(self, col, row,2)
                 if tile == 'F':
@@ -268,9 +272,9 @@ def savereport(filename,beststeps, trials):
         fid.write("Best solution in " + str(beststeps) + " steps\n")
 
 
-def play(map, trials, noise):
+def play(map, trials, noise, error, gravity_factor, acceleration_factor):
     MAP = map
-    g = Game(False, map)
+    g = Game(False, map, gravity_factor, acceleration_factor)
     pos_init, goal, actions = g.new()
     prob = MySearchProblem(actions, pos_init, goal, g)
     agent = aimabasedlrta.LRTAStarAgent(prob)
@@ -286,9 +290,11 @@ def play(map, trials, noise):
     while trial < trials:
         steps += 1
         if(trial == 0):
-            action = agent(projx(pos),0)
+            action = agent(projx(pos))
         else:
-            action = agent(projx(pos),noise)
+            action = agent(projx(pos))
+            if not np.random.rand()>=noise:
+                action = np.random.choice(actions,1)[0]
         seconds, playing, next_pos, won = g.step(action)
         #g.draw()
         #g.clock.tick(FPS)
